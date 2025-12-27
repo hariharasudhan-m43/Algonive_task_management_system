@@ -33,10 +33,6 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-
-      <div className="mt-auto text-xs text-slate-500">
-        Cyber Task OS
-      </div>
     </motion.aside>
   );
 }

@@ -1,29 +1,54 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { getTeams } from "../../services/api";
 import useAuthStore from "../../store/authStore";
-import { motion } from "framer-motion";
 
 export default function TeamSwitcher() {
-  const { activeTeam, setActiveTeam } = useAuthStore();
+  const { token, activeTeam, setActiveTeam } = useAuthStore();
   const [teams, setTeams] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    async function loadTeams() {
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
+  if (!token) return;
+
+  let cancelled = false;
+
+  async function loadTeams() {
+    try {
+      setLoading(true);
       const data = await getTeams();
+
+      if (cancelled) return;
+
       setTeams(data);
 
       if (!activeTeam && data.length > 0) {
         setActiveTeam(data[0]);
       }
+    } catch {
+      console.error("Failed to load teams");
+    } finally {
+      if (!cancelled) setLoading(false);
     }
+  }
 
-    loadTeams();
-  }, [activeTeam, setActiveTeam]);
+  loadTeams();
 
-  function handleChange(e) {
-    const teamId = e.target.value;
-    const team = teams.find((t) => t._id === teamId);
-    setActiveTeam(team);
+  return () => {
+    cancelled = true;
+  };
+}, [token, setActiveTeam]);
+
+  // ✅ Nothing renders if not logged in
+  if (!token) return null;
+
+  if (loading) {
+    return (
+      <span className="text-xs text-slate-500">
+        Loading teams…
+      </span>
+    );
   }
 
   if (teams.length === 0) {
@@ -32,6 +57,11 @@ export default function TeamSwitcher() {
         No teams
       </span>
     );
+  }
+
+  function handleChange(e) {
+    const team = teams.find((t) => t._id === e.target.value);
+    setActiveTeam(team);
   }
 
   return (
